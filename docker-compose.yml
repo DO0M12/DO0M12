@@ -1,0 +1,27 @@
+# Runs the watermarks-remover cleaning service that the remove-ai-marks
+# skill (.claude/skills/remove-ai-marks) calls over HTTP.
+#
+#   docker compose up -d
+#
+# Then point the skill at it (default already matches):
+#   export WATERMARKS_SERVICE_URL=http://127.0.0.1:8765
+#
+# Full source + optional heavy backends (SynthID scoring, pixel removal,
+# markllm/markdiffusion harnesses): https://github.com/guillaumemeyer/watermarks-remover
+
+name: watermarks-remover
+
+services:
+  wr-core:
+    image: ghcr.io/guillaumemeyer/watermarks-remover:latest
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      # Set to require `Authorization: Bearer <key>` on requests to the service.
+      WATERMARKS_SERVER_API_KEY: ${WATERMARKS_SERVER_API_KEY:-}
+    read_only: true
+    tmpfs:
+      - /tmp
+    init: true
+    user: "10001:10001"
+    restart: unless-stopped
