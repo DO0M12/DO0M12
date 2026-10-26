@@ -39,7 +39,7 @@ The health libraries need native code, so Cadence can't run in Expo Go. It's bui
 1. **Join the Apple Developer Program** ($99/year). You can enroll from the Apple Developer app on the iPhone. Approval can take up to two days, so start here.
 2. **Create a free Expo account** at expo.dev.
 3. **Install the TestFlight app** on the iPhone from the App Store.
-4. **On the computer**, install Node.js (the LTS version from nodejs.org), then get this repository onto it (GitHub's **Code → Download ZIP**, or `git clone`).
+4. **On the computer**, install Node.js (the LTS version from nodejs.org), then get this repository onto it (GitHub's **Code → Download ZIP** on the default branch, or `git clone`).
 5. Open a terminal in the `mobile` folder and run:
    ```bash
    npm install
@@ -52,7 +52,7 @@ If `com.buckbros.cadence` is already taken, pick another bundle ID when `npx tes
 
 **Updates after that (no computer)**
 
-`.eas/workflows/testflight.yml` builds and ships a new TestFlight version every time a change to `mobile/` lands on `main`. To turn it on:
+`.eas/workflows/testflight.yml` builds and ships a new TestFlight version every time a change to `mobile/` lands on the repo's default branch (`claude/inspiring-keller-1cuy1c`, or `main` if you rename it). To turn it on:
 
 1. On expo.dev, open the Cadence project → **Settings → GitHub**, install the Expo GitHub app and link this repository.
 2. Set **Base directory** to `mobile`.

@@ -1,12 +1,13 @@
 name: Ship to TestFlight
 
-# Every push to main that touches the app builds it in the cloud and sends it to
-# TestFlight, so the update shows up in the TestFlight app on the iPhone.
+# Every push to the repo's default branch that touches the app builds it in the
+# cloud and sends it to TestFlight, so the update shows up on the iPhone.
 # Run it by hand from the project's Workflows page on expo.dev as well.
 # Add [eas skip] to a commit message to skip a run.
 on:
   push:
-    branches: ['main']
+    # The repo's default branch, plus main in case it gets renamed.
+    branches: ['claude/inspiring-keller-1cuy1c', 'main']
     paths:
       - 'mobile/**'
       - '!mobile/**/*.md'
