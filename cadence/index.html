@@ -1,0 +1,809 @@
+<title>Cadence</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&display=swap">
+<style>
+/* Layout: single app column (phone-first, centered on desktop), score dials up top, cards below, fixed bottom tab bar */
+:root {
+  color-scheme: dark;
+  --bg: #0a0c0f; --surface: #13161b; --raised: #1c2027; --line: #232831;
+  --ink: #f2f4f7; --muted: #8b94a4; --faint: #555d6b;
+  --green: #2bd47d; --green-soft: rgba(43, 212, 125, .14); --yellow: #f2c14e; --red: #ff5c5c;
+  --blue: #4c9dff; --orange: #ff7a3d; --violet: #a98bff;
+  --bar: rgba(10, 12, 15, .86);
+  --font: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box }
+html { background: var(--bg) }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font); -webkit-font-smoothing: antialiased }
+button, input, select, textarea { font: inherit; color: inherit }
+button { cursor: pointer }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px }
+h1, h2, h3, p { margin: 0 }
+.metric { font-stretch: 72%; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -.01em }
+
+.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+
+.top { display: flex; justify-content: space-between; align-items: center; padding-block: 16px 0 }
+.wordmark { font-weight: 750; letter-spacing: .36em; font-size: 13px }
+.top-right { display: flex; align-items: center; gap: 12px }
+.sync { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted) }
+.sync i { width: 6px; height: 6px; border-radius: 50%; background: var(--faint) }
+.sync.on i { background: var(--green) }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; font-size: 11.5px; font-weight: 650; letter-spacing: .05em; color: var(--muted) }
+
+main { padding-block: 4px calc(104px + env(safe-area-inset-bottom, 0px)) }
+section { display: flex; flex-direction: column; gap: 12px }
+.page-head { padding-block: 18px 8px; display: flex; flex-direction: column; gap: 2px }
+.eyebrow { color: var(--muted); font-size: 13px }
+h1 { font-size: 30px; font-weight: 650; letter-spacing: -.015em; line-height: 1.15; text-wrap: balance }
+
+.card { background: var(--surface); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap }
+.kicker { font-size: 11px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; color: var(--muted) }
+.meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums }
+.note { font-size: 13.5px; color: var(--muted); max-width: 60ch }
+h2 { font-size: 22px; font-weight: 650; letter-spacing: -.01em; line-height: 1.2 }
+
+/* dials */
+.rings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px }
+.ring { background: none; border: 0; padding: 14px 4px 12px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--ink); min-width: 0 }
+.ring[aria-pressed="true"] { background: var(--surface) }
+.dial { position: relative; width: 100%; max-width: 108px; aspect-ratio: 1 }
+.dial svg { position: absolute; inset: 0; width: 100%; height: 100% }
+.dial svg circle { transition: stroke-dasharray .5s ease }
+.dial b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(24px, 7.5vw, 34px) }
+.dial b small { font-size: .45em; color: var(--muted); margin-left: 1px; align-self: center; transform: translateY(.35em) }
+.ring > span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 650 }
+.ring[aria-pressed="true"] > span { color: var(--ink) }
+
+.contrib { display: flex; flex-direction: column; gap: 14px }
+.contrib-row { display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; align-items: baseline }
+.contrib-row .val { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums }
+.track { grid-column: 1 / -1; height: 4px; border-radius: 4px; background: var(--raised); overflow: hidden }
+.track i { display: block; height: 100%; border-radius: 4px; transition: width .4s ease }
+
+/* lists */
+.rows { list-style: none; margin: 0; padding: 0 }
+.row { display: flex; align-items: center; gap: 12px; padding-block: 12px; border-top: 1px solid var(--line) }
+.row:first-child { border-top: 0; padding-top: 0 }
+.row:last-child { padding-bottom: 0 }
+.t { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column }
+.sub { font-size: 12.5px; color: var(--muted); margin-top: 1px }
+.row.done .main { color: var(--faint); text-decoration: line-through; text-decoration-color: var(--faint) }
+.empty { color: var(--muted); font-size: 13.5px; padding-block: 2px; border: 0 }
+.area { display: inline-flex; align-items: center; gap: 6px }
+.area::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c) }
+.tick { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--faint); background: none; display: grid; place-items: center; flex: none; padding: 0; color: transparent; transition: background .15s, border-color .15s }
+.tick:hover { border-color: var(--muted) }
+.tick[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg) }
+.tick.green[aria-pressed="true"] { background: var(--green); border-color: var(--green) }
+.ibtn { background: none; border: 0; color: var(--faint); width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; padding: 0; flex: none }
+.ibtn:hover { color: var(--ink); background: var(--raised) }
+.ibtn.on { color: var(--orange) }
+.acts { display: flex; align-items: center; gap: 2px; flex: none }
+
+/* controls */
+.seg { display: flex; background: var(--bg); border-radius: 12px; padding: 3px; gap: 2px; overflow-x: auto }
+.seg button { flex: 1; border: 0; background: none; color: var(--muted); font-weight: 550; font-size: 13px; padding: 7px 10px; border-radius: 9px; white-space: nowrap }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--ink) }
+.add { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--bg); border-radius: 12px; padding: 6px 6px 6px 12px; border: 1px solid transparent }
+.add:focus-within { border-color: var(--line) }
+.add > svg { color: var(--faint); flex: none }
+.add.inline { flex-wrap: nowrap }
+.add input[type="text"] { flex: 1 1 140px; min-width: 0; background: none; border: 0; padding: 7px 0; outline: none }
+.add input::placeholder, textarea::placeholder { color: var(--faint) }
+.field { background: var(--raised); border: 0; border-radius: 9px; padding: 7px 10px; color: var(--ink); min-width: 0 }
+.btn { border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 600; background: var(--raised); color: var(--ink); white-space: nowrap }
+.btn:hover { filter: brightness(1.15) }
+.btn.primary { background: var(--ink); color: var(--bg) }
+.btn.block { width: 100%; padding: 13px; display: flex; align-items: center; justify-content: center; gap: 8px }
+.btn.complete { background: var(--green-soft); color: var(--green) }
+.btn.text { background: none; color: var(--muted); padding: 4px 0; font-weight: 550; font-size: 13px }
+.btn.text:hover { color: var(--ink); filter: none }
+.pill { border: 0; border-radius: 99px; background: var(--raised); color: var(--ink); font-size: 12.5px; font-weight: 600; padding: 6px 8px 6px 11px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap }
+.pill:hover { filter: brightness(1.2) }
+
+/* focus timer */
+.timer { display: flex; align-items: center; justify-content: space-between; gap: 16px }
+.clock { font-size: clamp(48px, 15vw, 64px) }
+.timer-ctrls { display: flex; align-items: center; gap: 6px }
+.play { width: 56px; height: 56px; border-radius: 50%; background: var(--ink); color: var(--bg); border: 0; display: grid; place-items: center; padding: 0 }
+
+/* studio */
+.big-stat { display: flex; align-items: baseline; gap: 8px }
+.big-stat .metric { font-size: 52px }
+.big-stat .of { font-size: 22px; color: var(--muted) }
+.progress { height: 6px; border-radius: 6px; background: var(--raised); overflow: hidden }
+.progress i { display: block; height: 100%; background: var(--violet); border-radius: 6px; transition: width .4s ease }
+.steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-top: 9px; max-width: 220px }
+.steps i { height: 3px; border-radius: 2px; background: var(--raised) }
+.steps i.on { background: var(--violet) }
+.dayb { width: 44px; flex: none; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--raised); border-radius: 9px; padding-block: 7px }
+.dayb.now { background: var(--ink); color: var(--bg) }
+.form-grid { display: flex; gap: 8px; flex-wrap: wrap }
+.form-grid .field { flex: 1 1 120px }
+
+/* body */
+.dose { color: var(--muted); font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; border-top: 1px solid var(--line); flex-wrap: wrap }
+.setting:first-of-type { border-top: 0; padding-top: 0 }
+.setting:last-child { padding-bottom: 0 }
+.setting label, .setting > span:first-child { font-weight: 500 }
+.stepper { display: flex; align-items: center; gap: 4px; background: var(--bg); border-radius: 12px; padding: 3px }
+.stepper button { width: 34px; height: 34px; border-radius: 9px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; padding: 0 }
+.stepper button:hover { background: var(--raised); color: var(--ink) }
+.stepper output { min-width: 64px; text-align: center; font-size: 20px }
+.energy { display: flex; gap: 4px; background: var(--bg); border-radius: 12px; padding: 3px }
+.energy button { width: 36px; height: 34px; border: 0; border-radius: 9px; background: none; color: var(--muted); font-weight: 650; font-variant-numeric: tabular-nums }
+.energy button[aria-pressed="true"] { background: var(--ink); color: var(--bg) }
+.unit-input { display: flex; align-items: baseline; gap: 6px; background: var(--bg); border-radius: 12px; padding: 6px 12px }
+.unit-input input { width: 70px; background: none; border: 0; outline: none; text-align: right; font-size: 20px; font-stretch: 72%; font-weight: 650; font-variant-numeric: tabular-nums }
+.unit-input span { color: var(--muted); font-size: 13px }
+.cups { display: grid; gap: 4px }
+.cups button { height: 30px; border-radius: 7px; border: 0; background: var(--raised); padding: 0 }
+.cups button.on { background: var(--blue) }
+.chart { width: 100%; height: auto; display: block }
+.chart text { fill: var(--muted); font: 600 11px var(--font); font-variant-numeric: tabular-nums }
+
+/* coach */
+.advisors { display: grid; gap: 8px }
+.advisor { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1.5px solid transparent; border-radius: 16px; padding: 12px 14px; text-align: left; color: var(--ink) }
+.advisor[aria-pressed="true"] { border-color: var(--ink) }
+.advisor .t b { font-weight: 600 }
+.mono { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 750; font-size: 12.5px; letter-spacing: .04em; color: var(--bg); background: var(--c); flex: none }
+.chat { display: flex; flex-direction: column; gap: 10px; max-height: 52vh; overflow-y: auto }
+.msg { padding: 11px 14px; border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 88%; font-size: 14.5px }
+.msg.me { align-self: flex-end; background: var(--ink); color: var(--bg); border-bottom-right-radius: 6px }
+.msg.ai { align-self: flex-start; background: var(--raised); border-bottom-left-radius: 6px }
+.quick { display: flex; gap: 6px; flex-wrap: wrap }
+.quick .pill { padding: 7px 12px; font-weight: 550; color: var(--muted) }
+.quick .pill:hover { color: var(--ink) }
+.composer { display: flex; gap: 8px; align-items: flex-end; background: var(--bg); border-radius: 14px; padding: 6px 6px 6px 14px; border: 1px solid transparent }
+.composer:focus-within { border-color: var(--line) }
+.composer textarea { flex: 1; min-width: 0; background: none; border: 0; outline: none; resize: none; padding: 8px 0; min-height: 40px; max-height: 140px }
+.send { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--ink); color: var(--bg); display: grid; place-items: center; padding: 0; flex: none }
+.send:disabled { opacity: .4 }
+
+/* tab bar */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px) }
+.tabbar .wrap { display: grid; grid-template-columns: repeat(4, 1fr) }
+.tabbar button { background: none; border: 0; color: var(--faint); display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 9px; font-size: 11px; font-weight: 600; letter-spacing: .03em }
+.tabbar button[aria-selected="true"] { color: var(--ink) }
+
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 99px; font-weight: 600; font-size: 13.5px; z-index: 20; white-space: nowrap }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<header class="wrap top">
+  <div class="wordmark">CADENCE</div>
+  <div class="top-right">
+    <span class="sync" id="sync"><i></i><span id="syncTxt">This device</span></span>
+    <div class="avatar" aria-hidden="true">BB</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- TODAY -->
+  <section id="tab-today">
+    <div class="page-head"><p class="eyebrow" id="dateLine"></p><h1 id="greet">Good evening</h1></div>
+    <div class="rings" id="rings"></div>
+    <div class="card contrib" id="contrib"></div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Priorities</span><span class="meta" id="priMeta"></span></div>
+      <ul class="rows" id="priList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Focus</span><span class="meta" id="focusMeta"></span></div>
+      <div class="seg" id="modeSeg"><button type="button" data-m="25" aria-pressed="true">Focus 25</button><button type="button" data-m="50" aria-pressed="false">Deep work 50</button><button type="button" data-m="5" aria-pressed="false">Break 5</button></div>
+      <div class="timer">
+        <div class="clock metric" id="clock">25:00</div>
+        <div class="timer-ctrls">
+          <button class="ibtn" id="resetBtn" type="button" aria-label="Reset timer" data-icon="reset"></button>
+          <button class="play" id="startBtn" type="button" aria-label="Start timer"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Tasks</span><button class="btn text" id="clearDone" type="button">Clear completed</button></div>
+      <div class="seg" id="taskFilter"><button type="button" data-f="all" aria-pressed="true">All</button><button type="button" data-f="biz" aria-pressed="false">Business</button><button type="button" data-f="media" aria-pressed="false">Content</button><button type="button" data-f="health" aria-pressed="false">Health</button></div>
+      <form class="add inline" id="taskForm">
+        <span data-icon="plus" data-size="18" style="display:contents"></span>
+        <input type="text" id="taskInput" placeholder="Add a task" aria-label="New task" autocomplete="off">
+        <select class="field" id="taskArea" aria-label="Area" style="font-size:13px"><option value="biz">Business</option><option value="media">Content</option><option value="health">Health</option></select>
+        <button class="btn primary">Add</button>
+      </form>
+      <ul class="rows" id="taskList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Daily habits</span><span class="meta" id="habitMeta"></span></div>
+      <ul class="rows" id="habitList"></ul>
+      <form class="add" id="habitForm">
+        <span data-icon="plus" data-size="18" style="display:contents"></span>
+        <input type="text" id="habitInput" placeholder="Add a habit" aria-label="New habit" autocomplete="off">
+      </form>
+    </div>
+  </section>
+
+  <!-- STUDIO -->
+  <section id="tab-studio" hidden>
+    <div class="page-head"><p class="eyebrow">Buck Bros Gaming</p><h1>Studio</h1></div>
+    <div class="card">
+      <div class="card-head"><span class="kicker">Uploads this week</span>
+        <div class="stepper" aria-label="Weekly upload target"><button type="button" id="upMinus" aria-label="Lower weekly target" data-icon="minus" data-size="16"></button><output class="metric" id="upTarget" style="font-size:15px;min-width:70px"></output><button type="button" id="upPlus" aria-label="Raise weekly target" data-icon="plus" data-size="16"></button></div>
+      </div>
+      <div class="big-stat"><span class="metric" id="upCount">0</span><span class="metric of" id="upGoal">/ 3</span></div>
+      <div class="progress"><i id="upBar" style="width:0%"></i></div>
+      <p class="note" id="upNote"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">In production</span><span class="meta" id="pipeMeta"></span></div>
+      <form class="form-grid" id="contentForm">
+        <input type="text" class="field" id="contentInput" placeholder="New video or post" aria-label="Title" autocomplete="off" style="flex:1 1 100%">
+        <select class="field" id="contentPlat" aria-label="Platform"><option>YouTube</option><option>Shorts</option><option>TikTok</option><option>Twitch</option><option>Instagram</option><option>X</option></select>
+        <input type="date" class="field" id="contentDue" aria-label="Target date">
+        <button class="btn primary">Add</button>
+      </form>
+      <ul class="rows" id="pipeList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Shipped</span></div>
+      <ul class="rows" id="shipList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Stream schedule</span></div>
+      <ul class="rows" id="streamList"></ul>
+      <form class="form-grid" id="streamForm">
+        <select class="field" id="streamDay" aria-label="Day"></select>
+        <input type="time" class="field" id="streamTime" value="19:00" aria-label="Start time">
+        <input type="text" class="field" id="streamTitle" placeholder="Game or show" aria-label="Stream title" style="flex:2 1 160px" autocomplete="off">
+        <button class="btn">Add</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Ideas</span><span class="meta" id="ideaMeta"></span></div>
+      <form class="add" id="ideaForm">
+        <span data-icon="plus" data-size="18" style="display:contents"></span>
+        <input type="text" id="ideaInput" placeholder="Capture an idea" aria-label="New idea" autocomplete="off">
+      </form>
+      <ul class="rows" id="ideaList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Publish checklist</span><span class="meta" id="launchMeta"></span></div>
+      <ul class="rows" id="launchList"></ul>
+      <button class="btn text" id="launchReset" type="button" style="align-self:flex-start">Reset for next upload</button>
+    </div>
+  </section>
+
+  <!-- BODY -->
+  <section id="tab-body" hidden>
+    <div class="page-head"><p class="eyebrow" id="bodyEyebrow"></p><h1>Body</h1></div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Today's training</span><span class="meta" id="wkMeta"></span></div>
+      <h2 id="wkTitle"></h2>
+      <ul class="rows" id="wkList"></ul>
+      <button class="btn block primary" id="wkBtn" type="button">Mark complete</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Check-in</span><span class="meta">Today</span></div>
+      <div>
+        <div class="setting"><span>Sleep</span>
+          <div class="stepper"><button type="button" id="sleepMinus" aria-label="Less sleep" data-icon="minus" data-size="16"></button><output class="metric" id="sleepVal">—</output><button type="button" id="sleepPlus" aria-label="More sleep" data-icon="plus" data-size="16"></button></div>
+        </div>
+        <div class="setting"><span>Energy</span><div class="energy" id="energy"></div></div>
+        <div class="setting"><label for="weightIn">Weight</label>
+          <div class="unit-input"><input type="number" step="0.1" min="50" max="600" id="weightIn" placeholder="—" inputmode="decimal"><span>lb</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Hydration</span><span class="meta" id="waterMeta"></span></div>
+      <div class="cups" id="cups"></div>
+      <div class="setting" style="border-top:1px solid var(--line);padding-top:14px">
+        <span>Desk breaks<span class="sub" style="display:block">Stand, stretch wrists, look 20 ft away</span></span>
+        <div class="stepper"><button type="button" id="breakMinus" aria-label="Remove a break" data-icon="minus" data-size="16"></button><output class="metric" id="breakVal">0</output><button type="button" id="breakPlus" aria-label="Log a break" data-icon="plus" data-size="16"></button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Day score · 7 days</span><span class="meta" id="trendMeta"></span></div>
+      <svg class="chart" id="trend" viewBox="0 0 320 132" role="img" aria-label="Daily score for the last 7 days"></svg>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Weight · 30 days</span><span class="meta" id="weightMeta"></span></div>
+      <svg class="chart" id="weightChart" viewBox="0 0 320 100" role="img" aria-label="Weight over the last 30 days"></svg>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="kicker">Targets</span></div>
+      <div>
+        <div class="setting"><span>Water</span><div class="stepper"><button type="button" id="wgMinus" aria-label="Lower water target" data-icon="minus" data-size="16"></button><output class="metric" id="wgVal" style="font-size:15px;min-width:80px"></output><button type="button" id="wgPlus" aria-label="Raise water target" data-icon="plus" data-size="16"></button></div></div>
+        <div class="setting"><span>Sleep</span><div class="stepper"><button type="button" id="sgMinus" aria-label="Lower sleep target" data-icon="minus" data-size="16"></button><output class="metric" id="sgVal" style="font-size:15px;min-width:80px"></output><button type="button" id="sgPlus" aria-label="Raise sleep target" data-icon="plus" data-size="16"></button></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COACH -->
+  <section id="tab-coach" hidden>
+    <div class="page-head"><p class="eyebrow">Advisors that see your live data</p><h1>Coach</h1></div>
+    <div class="advisors" id="advisors"></div>
+    <div class="card">
+      <div class="quick" id="quick"></div>
+      <div class="chat" id="chat" aria-live="polite"></div>
+      <form class="composer" id="askForm">
+        <textarea id="askInput" rows="1" placeholder="Message" aria-label="Message"></textarea>
+        <button class="send" id="askBtn" aria-label="Send" data-icon="arrowUp" data-size="18"></button>
+      </form>
+      <p class="note" id="coachNote" hidden>Advisors are available when this page is open in Claude. Everything else works anywhere.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="Sections">
+  <div class="wrap" role="tablist">
+    <button role="tab" data-tab="today" aria-selected="true"><span data-icon="today" data-size="22" style="display:contents"></span>Today</button>
+    <button role="tab" data-tab="studio" aria-selected="false"><span data-icon="studio" data-size="22" style="display:contents"></span>Studio</button>
+    <button role="tab" data-tab="body" aria-selected="false"><span data-icon="body" data-size="22" style="display:contents"></span>Body</button>
+    <button role="tab" data-tab="coach" aria-selected="false"><span data-icon="coach" data-size="22" style="display:contents"></span>Coach</button>
+  </div>
+</nav>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  // ---------- constants ----------
+  const STAGES = ["Idea", "Script", "Record", "Edit", "Scheduled", "Posted"];
+  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const AREA = { biz: "Business", media: "Content", health: "Health" };
+  const AREA_C = { biz: "var(--blue)", media: "var(--violet)", health: "var(--green)" };
+  const WORKOUTS = [
+    { t: "Recovery", min: 30, items: [["Full-body stretch", "15 min"], ["Easy walk outside", "10 min"], ["Weekly review with Coach", "5 min"]] },
+    { t: "Upper push", min: 35, items: [["Push-ups", "3 × 10–15"], ["Dumbbell floor press", "3 × 10"], ["Overhead press", "3 × 10"], ["Bench dips", "3 × 12"], ["Plank", "3 × 40 s"]] },
+    { t: "Mobility", min: 45, items: [["Hip flexor stretch", "2 × 45 s / side"], ["Thoracic openers", "2 × 10"], ["Wrist & forearm stretch", "2 × 30 s"], ["Chin tucks", "2 × 10"], ["Brisk walk", "30 min"]] },
+    { t: "Upper pull", min: 35, items: [["Dumbbell row", "3 × 10 / arm"], ["Band pull-aparts", "3 × 15"], ["Reverse fly", "3 × 12"], ["Biceps curl", "3 × 12"], ["Dead hang", "3 × 20 s"]] },
+    { t: "Zone 2 cardio", min: 40, items: [["Bike, jog or incline walk", "30 min"], ["Wrist extensor stretch", "2 × 30 s"], ["Glute bridge", "2 × 15"]] },
+    { t: "Lower body", min: 40, items: [["Goblet squat", "3 × 12"], ["Romanian deadlift", "3 × 10"], ["Reverse lunge", "3 × 8 / leg"], ["Calf raise", "3 × 15"], ["Glute bridge", "3 × 15"]] },
+    { t: "Active outdoors", min: 55, items: [["Hoops, hike, bike or swim", "45 min"], ["Cool-down stretch", "10 min"]] },
+  ];
+  const DEFAULT_HABITS = ["Protein with breakfast", "20-20-20 eye breaks while gaming", "Engage with community for 15 min", "No screens 30 min before bed", "10 min learning (editing, business, health)"];
+  const DEFAULT_LAUNCH = ["Hook lands in the first 5 seconds", "Thumbnail readable at phone size", "Title under 60 characters, keyword first", "Description, tags and chapters filled in", "End screen and pinned comment set", "2–3 Shorts or TikToks clipped from it", "Shared to Discord, X and Instagram stories"];
+  const ADVISORS = {
+    manager: { name: "Chief of Staff", sub: "Priorities, schedule, sponsors, money", mono: "CS", c: "var(--blue)", sys: "You are the user's chief of staff and business manager. Be direct and practical. Help them prioritize, plan their day and week, handle sponsor and brand deals, and protect time for content and health. Keep answers short with clear next steps.", quick: ["Plan my day", "What should I drop this week?", "Draft a sponsor outreach email"] },
+    media: { name: "Creative Director", sub: "Ideas, titles, thumbnails, growth", mono: "CD", c: "var(--violet)", sys: "You are the creative director for the user's gaming channel, Buck Bros Gaming. You know YouTube, Shorts, TikTok and Twitch. Give concrete titles, hooks, thumbnail concepts and posting plans. Keep answers tight.", quick: ["5 video ideas from my idea bank", "3 titles for my next upload", "Plan this week's posting schedule"] },
+    coach: { name: "Performance Coach", sub: "Training, nutrition, sleep, posture", mono: "PC", c: "var(--green)", sys: "You are the user's performance coach. They game and edit at a desk for long hours. Give safe, realistic advice on training, nutrition, sleep, posture and wrist health. You are not a doctor; suggest seeing one for pain or medical concerns. Keep answers short.", quick: ["I have 15 minutes, adjust today's workout", "Easy high-protein meals for a busy day", "Help me fix my sleep schedule"] },
+  };
+  const ICONS = {
+    today: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    studio: '<rect x="3" y="5" width="18" height="14" rx="3.5"/><path d="M10.2 9.4v5.2l4.4-2.6z" fill="currentColor" stroke="none"/>',
+    body: '<path d="M3 12.5h3.8l2.4-5.5 4.6 11 2.4-5.5H21"/>',
+    coach: '<path d="M5 19V7.5A3.5 3.5 0 0 1 8.5 4h7A3.5 3.5 0 0 1 19 7.5v5a3.5 3.5 0 0 1-3.5 3.5H8.4z"/>',
+    plus: '<path d="M12 5.5v13M5.5 12h13"/>',
+    minus: '<path d="M5.5 12h13"/>',
+    x: '<path d="M7 7l10 10M17 7L7 17"/>',
+    check: '<path d="M5.5 12.5l4 4 9-9.5"/>',
+    flag: '<path d="M6.5 20.5V4.5"/><path d="M6.5 5h10.5l-2.2 4 2.2 4H6.5"/>',
+    flagOn: '<path d="M6.5 20.5V4.5"/><path d="M6.5 5h10.5l-2.2 4 2.2 4H6.5z" fill="currentColor"/>',
+    chevR: '<path d="M10 7l5 5-5 5"/>',
+    chevL: '<path d="M14 7l-5 5 5 5"/>',
+    play: '<path d="M8.5 6.2v11.6L18 12z" fill="currentColor" stroke="none"/>',
+    pause: '<path d="M9 6.5v11M15 6.5v11"/>',
+    reset: '<path d="M5 12a7 7 0 1 0 2.1-5"/><path d="M5 4.5V8h3.5"/>',
+    arrowUp: '<path d="M12 18.5v-13M6.5 11L12 5.5 17.5 11"/>',
+  };
+
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const uid = () => Math.random().toString(36).slice(2, 9);
+  const dkey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
+  const fmtDate = (k) => new Date(k + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const fmtTime = (hm) => { const [h, m] = hm.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
+  const fmtH = (h) => { const m = Math.round((h % 1) * 60); return `${Math.floor(h)}h${m ? " " + m + "m" : ""}`; };
+  const weekStart = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; };
+  function icon(name, size = 20, sw = 1.8) {
+    const s = document.createElementNS(NS, "svg");
+    for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", width: size, height: size, fill: "none", stroke: "currentColor", "stroke-width": sw, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) s.setAttribute(k, v);
+    s.innerHTML = ICONS[name];
+    return s;
+  }
+  const el = (tag, attrs = {}, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "class") n.className = v;
+      else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+      else if (v != null && v !== false) n.setAttribute(k, v === true ? "" : v);
+    }
+    for (const k of kids.flat()) if (k != null) n.append(k.nodeType ? k : document.createTextNode(k));
+    return n;
+  };
+  const svgEl = (t, a) => { const n = document.createElementNS(NS, t); for (const k in a) n.setAttribute(k, a[k]); return n; };
+  let toastT;
+  const toast = (msg) => { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 1800); };
+
+  // ---------- state ----------
+  const fresh = () => ({ v: 2, tasks: [], content: [], ideas: [], streams: [], days: {}, habits: DEFAULT_HABITS.slice(), launch: DEFAULT_LAUNCH.slice(), launchDone: [], goals: { water: 8, sleep: 8, uploads: 3 } });
+  const normalize = (s) => { const f = fresh(), o = Object.assign(f, s || {}); o.goals = Object.assign(fresh().goals, (s && s.goals) || {}); return o; };
+  let S = fresh();
+  try { const raw = localStorage.getItem("bbhq"); if (raw) S = normalize(JSON.parse(raw)); } catch (e) {}
+  const today = () => { const k = dkey(); if (!S.days[k]) S.days[k] = { water: 0, breaks: 0, focus: 0, workout: false, habits: [] }; return S.days[k]; };
+
+  let docRef = null, saveT = null, lastSaved = "";
+  const setSync = (t, on) => { $("syncTxt").textContent = t; $("sync").classList.toggle("on", !!on); };
+  function save() {
+    const keys = Object.keys(S.days).sort(); while (keys.length > 90) delete S.days[keys.shift()];
+    try { localStorage.setItem("bbhq", JSON.stringify(S)); } catch (e) {}
+    if (!docRef) return;
+    clearTimeout(saveT);
+    setSync("Saving", true);
+    saveT = setTimeout(async () => {
+      const body = JSON.stringify(S);
+      if (body === lastSaved) { setSync("Synced", true); return; }
+      try { await docRef.set(JSON.parse(body)); lastSaved = body; setSync("Synced", true); }
+      catch (e) { setSync(e && e.code === "quota_exceeded" ? "Storage full" : "This device", false); }
+    }, 700);
+  }
+  const commit = () => { save(); render(); };
+
+  // ---------- scores ----------
+  function scores(k) {
+    const d = S.days[k] || {};
+    const pri = S.tasks.filter((t) => t.pri);
+    const priV = k === dkey() ? (pri.length ? pri.filter((t) => t.done).length / pri.length : null) : (d.priDone ?? null);
+    const habitsDone = (d.habits || []).filter((h) => S.habits.includes(h)).length;
+    const mk = (rows) => { const live = rows.filter((r) => r.v != null), w = live.reduce((a, r) => a + r.w, 0); return { rows, score: w ? Math.round((100 * live.reduce((a, r) => a + r.v * r.w, 0)) / w) : null }; };
+    return {
+      readiness: mk([
+        { n: "Sleep", w: 0.6, v: d.sleep ? Math.min(1, d.sleep / S.goals.sleep) : null, txt: d.sleep ? `${fmtH(d.sleep)} of ${fmtH(S.goals.sleep)}` : "Not logged" },
+        { n: "Energy", w: 0.4, v: d.energy ? (d.energy - 1) / 4 : null, txt: d.energy ? `${d.energy} of 5` : "Not logged" },
+      ]),
+      execution: mk([
+        { n: "Priorities", w: 0.5, v: priV, txt: k === dkey() ? (pri.length ? `${pri.filter((t) => t.done).length} of ${pri.length}` : "None set") : "" },
+        { n: "Focus blocks", w: 0.3, v: Math.min(1, (d.focus || 0) / 3), txt: `${d.focus || 0} of 3` },
+        { n: "Habits", w: 0.2, v: S.habits.length ? habitsDone / S.habits.length : null, txt: `${habitsDone} of ${S.habits.length}` },
+      ]),
+      activity: mk([
+        { n: "Training", w: 0.5, v: d.workout ? 1 : 0, txt: d.workout ? "Complete" : "Not yet" },
+        { n: "Hydration", w: 0.3, v: Math.min(1, (d.water || 0) / S.goals.water), txt: `${d.water || 0} of ${S.goals.water} glasses` },
+        { n: "Desk breaks", w: 0.2, v: Math.min(1, (d.breaks || 0) / 4), txt: `${d.breaks || 0} of 4` },
+      ]),
+    };
+  }
+  const dayScore = (k) => { if (!S.days[k]) return null; const r = scores(k), v = [r.readiness.score, r.execution.score, r.activity.score].filter((x) => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+  const RING = {
+    readiness: { label: "Readiness", color: (s) => (s == null ? "var(--faint)" : s >= 67 ? "var(--green)" : s >= 34 ? "var(--yellow)" : "var(--red)"),
+      note: (s) => (s == null ? "Log sleep and energy in Body to see how ready you are today." : s >= 67 ? "You're recovered. A good day for a hard session or a long edit." : s >= 34 ? "Steady. Train as planned and keep stream length reasonable." : "Running low. Prioritise sleep, water and lighter work today.") },
+    execution: { label: "Execution", color: () => "var(--blue)", note: () => "How much of today's plan is done: priorities, focused work and habits." },
+    activity: { label: "Activity", color: () => "var(--orange)", note: () => "Training, hydration and time away from the desk." },
+  };
+  function dial(score, color) {
+    const C = 2 * Math.PI * 44, w = document.createElement("div");
+    w.className = "dial";
+    const s = svgEl("svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
+    s.append(svgEl("circle", { cx: 50, cy: 50, r: 44, fill: "none", stroke: "var(--raised)", "stroke-width": 7 }));
+    if (score) s.append(svgEl("circle", { cx: 50, cy: 50, r: 44, fill: "none", stroke: color, "stroke-width": 7, "stroke-linecap": "round", transform: "rotate(-90 50 50)", "stroke-dasharray": `${(C * score) / 100} ${C}` }));
+    const b = el("b", { class: "metric" }, score == null ? "—" : String(score));
+    if (score != null) b.append(el("small", {}, "%"));
+    w.append(s, b);
+    return w;
+  }
+
+  // ---------- render ----------
+  let selRing = "readiness", taskFilter = "all";
+  function render() { renderToday(); renderStudio(); renderBody(); }
+
+  function renderToday() {
+    const d = today(), R = scores(dkey());
+    d.priDone = R.execution.rows[0].v;
+    const h = new Date().getHours();
+    $("dateLine").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+    $("greet").textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    $("rings").replaceChildren(...Object.keys(RING).map((k) => {
+      const s = R[k].score;
+      return el("button", { class: "ring", type: "button", "aria-pressed": String(k === selRing), "aria-label": `${RING[k].label} ${s == null ? "not available" : s + " percent"}`, onclick: () => { selRing = k; renderToday(); } }, dial(s, RING[k].color(s)), el("span", {}, RING[k].label));
+    }));
+    const cur = R[selRing], col = RING[selRing].color(cur.score);
+    $("contrib").replaceChildren(
+      el("div", { class: "card-head" }, el("span", { class: "kicker" }, RING[selRing].label), el("span", { class: "meta" }, "Contributors")),
+      el("p", { class: "note" }, RING[selRing].note(cur.score)),
+      ...cur.rows.map((r) => el("div", { class: "contrib-row" }, el("span", {}, r.n), el("span", { class: "val" }, r.txt), el("div", { class: "track" }, el("i", { style: `width:${Math.round((r.v ?? 0) * 100)}%;background:${col}` })))));
+
+    const pri = S.tasks.filter((t) => t.pri);
+    $("priMeta").textContent = pri.length ? `${pri.filter((t) => t.done).length} of ${pri.length} done` : "";
+    $("priList").replaceChildren(...(pri.length ? pri.map(taskRow) : [el("li", { class: "empty" }, "Flag up to three tasks below to set today's priorities.")]));
+
+    const list = S.tasks.filter((t) => taskFilter === "all" || t.area === taskFilter).sort((a, b) => a.done - b.done);
+    $("taskList").replaceChildren(...(list.length ? list.map(taskRow) : [el("li", { class: "empty" }, "No tasks here yet.")]));
+    document.querySelectorAll("#taskFilter button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.f === taskFilter)));
+
+    $("habitMeta").textContent = `${d.habits.filter((x) => S.habits.includes(x)).length} of ${S.habits.length}`;
+    $("habitList").replaceChildren(...S.habits.map((hb) => {
+      const on = d.habits.includes(hb);
+      return el("li", { class: "row" + (on ? " done" : "") },
+        el("button", { class: "tick", type: "button", "aria-pressed": String(on), "aria-label": hb, onclick: () => { d.habits = on ? d.habits.filter((x) => x !== hb) : [...d.habits, hb]; commit(); } }, icon("check", 14, 2.4)),
+        el("span", { class: "t" }, el("span", { class: "main" }, hb)),
+        el("button", { class: "ibtn", type: "button", "aria-label": "Remove habit " + hb, onclick: () => { S.habits = S.habits.filter((x) => x !== hb); commit(); } }, icon("x", 16)));
+    }));
+    $("focusMeta").textContent = `${d.focus} block${d.focus === 1 ? "" : "s"} today`;
+  }
+
+  function taskRow(t) {
+    return el("li", { class: "row" + (t.done ? " done" : "") },
+      el("button", { class: "tick", type: "button", "aria-pressed": String(t.done), "aria-label": "Complete: " + t.t, onclick: () => { t.done = !t.done; commit(); } }, icon("check", 14, 2.4)),
+      el("span", { class: "t" }, el("span", { class: "main" }, t.t), el("span", { class: "sub area", style: `--c:${AREA_C[t.area]}` }, AREA[t.area])),
+      el("span", { class: "acts" },
+        el("button", { class: "ibtn" + (t.pri ? " on" : ""), type: "button", "aria-label": t.pri ? "Remove from priorities" : "Make a priority", onclick: () => {
+          if (!t.pri && S.tasks.filter((x) => x.pri).length >= 3) { toast("Three priorities max. Unflag one first."); return; }
+          t.pri = !t.pri; commit(); } }, icon(t.pri ? "flagOn" : "flag", 18)),
+        el("button", { class: "ibtn", type: "button", "aria-label": "Delete task", onclick: () => { S.tasks = S.tasks.filter((x) => x !== t); commit(); } }, icon("x", 16))));
+  }
+
+  function renderStudio() {
+    const ws = weekStart();
+    const shippedWeek = S.content.filter((c) => c.stage === 5 && c.postedAt && new Date(c.postedAt + "T12:00") >= ws).length;
+    const goal = S.goals.uploads;
+    $("upCount").textContent = shippedWeek;
+    $("upGoal").textContent = "/ " + goal;
+    $("upTarget").textContent = `Target ${goal}`;
+    $("upBar").style.width = Math.min(100, (shippedWeek / goal) * 100) + "%";
+    const left = goal - shippedWeek, daysLeft = 7 - ((new Date().getDay() + 6) % 7);
+    $("upNote").textContent = left <= 0 ? "Weekly target hit. Anything else is a bonus." : `${left} more to hit your target, ${daysLeft} day${daysLeft === 1 ? "" : "s"} left this week.`;
+
+    const active = S.content.filter((c) => c.stage < 5).sort((a, b) => b.stage - a.stage);
+    $("pipeMeta").textContent = active.length ? `${active.length} active` : "";
+    $("pipeList").replaceChildren(...(active.length ? active.map((c) => el("li", { class: "row" },
+      el("div", { class: "t" },
+        el("span", { class: "main" }, c.title),
+        el("span", { class: "sub" }, [c.plat, STAGES[c.stage], c.due ? "Due " + fmtDate(c.due) : null].filter(Boolean).join(" · ")),
+        el("div", { class: "steps", "aria-hidden": "true" }, ...STAGES.map((_, i) => el("i", { class: i <= c.stage ? "on" : "" })))),
+      el("span", { class: "acts" },
+        c.stage > 0 ? el("button", { class: "ibtn", type: "button", "aria-label": "Move back to " + STAGES[c.stage - 1], onclick: () => { c.stage--; commit(); } }, icon("chevL", 18)) : null,
+        el("button", { class: "pill", type: "button", "aria-label": "Move to " + STAGES[c.stage + 1], onclick: () => {
+          c.stage++;
+          if (c.stage === 5) { c.postedAt = dkey(); toast("Shipped. Run the publish checklist."); }
+          commit(); } }, STAGES[c.stage + 1], icon("chevR", 14, 2)),
+        el("button", { class: "ibtn", type: "button", "aria-label": "Delete " + c.title, onclick: () => { S.content = S.content.filter((x) => x !== c); commit(); } }, icon("x", 16))))) :
+      [el("li", { class: "empty" }, "Nothing in production. Add a title or develop an idea.")]));
+
+    const shipped = S.content.filter((c) => c.stage === 5).sort((a, b) => (b.postedAt || "").localeCompare(a.postedAt || "")).slice(0, 6);
+    $("shipList").replaceChildren(...(shipped.length ? shipped.map((c) => el("li", { class: "row done-row" },
+      el("span", { class: "tick green", "aria-hidden": "true", "aria-pressed": "true" }, icon("check", 14, 2.4)),
+      el("span", { class: "t" }, el("span", { class: "main" }, c.title), el("span", { class: "sub" }, c.plat + (c.postedAt ? " · Posted " + fmtDate(c.postedAt) : ""))),
+      el("span", { class: "acts" },
+        el("button", { class: "ibtn", type: "button", "aria-label": "Move back to Scheduled", onclick: () => { c.stage = 4; delete c.postedAt; commit(); } }, icon("chevL", 18)),
+        el("button", { class: "ibtn", type: "button", "aria-label": "Delete " + c.title, onclick: () => { S.content = S.content.filter((x) => x !== c); commit(); } }, icon("x", 16))))) :
+      [el("li", { class: "empty" }, "Finished uploads show up here.")]));
+
+    const nowD = new Date().getDay();
+    const streams = S.streams.slice().sort((a, b) => ((a.day + 6) % 7) - ((b.day + 6) % 7) || a.time.localeCompare(b.time));
+    $("streamList").replaceChildren(...(streams.length ? streams.map((s) => el("li", { class: "row" },
+      el("span", { class: "dayb" + (s.day === nowD ? " now" : "") }, DAYS[s.day]),
+      el("span", { class: "t" }, el("span", { class: "main" }, s.title), el("span", { class: "sub" }, fmtTime(s.time) + (s.day === nowD ? " · Tonight" : ""))),
+      el("button", { class: "ibtn", type: "button", "aria-label": "Remove stream", onclick: () => { S.streams = S.streams.filter((x) => x !== s); commit(); } }, icon("x", 16)))) :
+      [el("li", { class: "empty" }, "Add your regular stream nights below.")]));
+
+    $("ideaMeta").textContent = S.ideas.length ? `${S.ideas.length} saved` : "";
+    $("ideaList").replaceChildren(...(S.ideas.length ? S.ideas.map((idea) => el("li", { class: "row" },
+      el("span", { class: "t" }, el("span", { class: "main" }, idea.t)),
+      el("span", { class: "acts" },
+        el("button", { class: "pill", type: "button", onclick: () => { S.content.push({ id: uid(), title: idea.t, plat: "YouTube", stage: 0, due: "" }); S.ideas = S.ideas.filter((x) => x !== idea); toast("Moved to production"); commit(); } }, "Develop", icon("chevR", 14, 2)),
+        el("button", { class: "ibtn", type: "button", "aria-label": "Delete idea", onclick: () => { S.ideas = S.ideas.filter((x) => x !== idea); commit(); } }, icon("x", 16))))) :
+      [el("li", { class: "empty" }, "Ideas you have mid-session land here.")]));
+
+    const doneN = S.launch.filter((x) => S.launchDone.includes(x)).length;
+    $("launchMeta").textContent = `${doneN} of ${S.launch.length}`;
+    $("launchList").replaceChildren(...S.launch.map((item) => {
+      const on = S.launchDone.includes(item);
+      return el("li", { class: "row" + (on ? " done" : "") },
+        el("button", { class: "tick", type: "button", "aria-pressed": String(on), "aria-label": item, onclick: () => { S.launchDone = on ? S.launchDone.filter((x) => x !== item) : [...S.launchDone, item]; commit(); } }, icon("check", 14, 2.4)),
+        el("span", { class: "t" }, el("span", { class: "main" }, item)));
+    }));
+  }
+
+  function renderBody() {
+    const d = today(), dow = new Date().getDay(), w = WORKOUTS[dow];
+    $("bodyEyebrow").textContent = new Date().toLocaleDateString(undefined, { weekday: "long" }) + " · " + w.t;
+    $("wkTitle").textContent = w.t;
+    $("wkMeta").textContent = `About ${w.min} min`;
+    $("wkList").replaceChildren(...w.items.map(([n, dose]) => el("li", { class: "row" }, el("span", { class: "t" }, n), el("span", { class: "dose" }, dose))));
+    const wb = $("wkBtn");
+    wb.className = "btn block " + (d.workout ? "complete" : "primary");
+    wb.replaceChildren(...(d.workout ? [icon("check", 16, 2.4), "Completed"] : ["Mark complete"]));
+
+    $("sleepVal").textContent = d.sleep ? fmtH(d.sleep) : "—";
+    $("energy").replaceChildren(...[1, 2, 3, 4, 5].map((n) => el("button", { type: "button", "aria-pressed": String(d.energy === n), "aria-label": `Energy ${n} of 5`, onclick: () => { d.energy = d.energy === n ? null : n; commit(); } }, String(n))));
+    if (document.activeElement !== $("weightIn")) $("weightIn").value = d.weight ?? "";
+
+    $("waterMeta").textContent = `${d.water} of ${S.goals.water} glasses`;
+    $("cups").style.gridTemplateColumns = `repeat(${S.goals.water}, 1fr)`;
+    $("cups").replaceChildren(...Array.from({ length: S.goals.water }, (_, i) => el("button", { type: "button", class: i < d.water ? "on" : "", "aria-label": `Set water to ${i + 1} glasses`, onclick: () => { d.water = d.water === i + 1 ? i : i + 1; commit(); } })));
+    $("breakVal").textContent = d.breaks;
+    $("wgVal").textContent = `${S.goals.water} glasses`;
+    $("sgVal").textContent = fmtH(S.goals.sleep);
+
+    // 7-day day score
+    const svg = $("trend"); svg.replaceChildren();
+    const bw = 30, step = (320 - 8 - bw) / 6, vals = [];
+    for (let i = 0; i < 7; i++) {
+      const dt = daysAgo(6 - i), s = dayScore(dkey(dt)), x = 4 + i * step;
+      if (s != null) vals.push(s);
+      svg.append(svgEl("rect", { x, y: 22, width: bw, height: 84, rx: 7, fill: "var(--raised)" }));
+      if (s) svg.append(svgEl("rect", { x, y: 22 + 84 * (1 - s / 100), width: bw, height: (84 * s) / 100, rx: 7, fill: i === 6 ? "var(--orange)" : "var(--ink)", opacity: i === 6 ? 1 : 0.8 }));
+      const v = svgEl("text", { x: x + bw / 2, y: 14, "text-anchor": "middle" }); v.textContent = s == null ? "–" : s; svg.append(v);
+      const l = svgEl("text", { x: x + bw / 2, y: 126, "text-anchor": "middle" }); l.textContent = i === 6 ? "Today" : DAYS[dt.getDay()]; svg.append(l);
+    }
+    $("trendMeta").textContent = vals.length ? `Avg ${Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)}` : "";
+
+    // 30-day weight
+    const wc = $("weightChart"); wc.replaceChildren();
+    const pts = [];
+    for (let i = 29; i >= 0; i--) { const v = S.days[dkey(daysAgo(i))]?.weight; if (v) pts.push([29 - i, +v]); }
+    if (pts.length < 2) {
+      $("weightMeta").textContent = pts.length ? `${pts[0][1].toFixed(1)} lb` : "";
+      const t = svgEl("text", { x: 160, y: 54, "text-anchor": "middle" }); t.textContent = "Log weight on two or more days to see a trend"; wc.append(t);
+    } else {
+      const ys = pts.map((p) => p[1]), lo = Math.min(...ys) - 0.5, hi = Math.max(...ys) + 0.5;
+      const X = (x) => 6 + (x / 29) * 308, Y = (y) => 86 - ((y - lo) / (hi - lo)) * 72;
+      for (const gy of [14, 50, 86]) wc.append(svgEl("line", { x1: 0, x2: 320, y1: gy, y2: gy, stroke: "var(--line)", "stroke-dasharray": gy === 86 ? "" : "2 4" }));
+      const line = pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
+      wc.append(svgEl("path", { d: `${line} L${X(pts.at(-1)[0])} 86 L${X(pts[0][0])} 86 Z`, fill: "var(--orange)", opacity: 0.12 }));
+      wc.append(svgEl("path", { d: line, fill: "none", stroke: "var(--orange)", "stroke-width": 2, "stroke-linejoin": "round" }));
+      const last = pts.at(-1);
+      wc.append(svgEl("circle", { cx: X(last[0]), cy: Y(last[1]), r: 4, fill: "var(--orange)", stroke: "var(--surface)", "stroke-width": 2 }));
+      const diff = last[1] - pts[0][1];
+      $("weightMeta").textContent = `${last[1].toFixed(1)} lb · ${diff > 0 ? "+" : diff < 0 ? "−" : ""}${Math.abs(diff).toFixed(1)}`;
+    }
+  }
+
+  // ---------- events ----------
+  document.querySelectorAll("[data-icon]").forEach((n) => n.prepend(icon(n.dataset.icon, +n.dataset.size || 20)));
+  $("taskForm").addEventListener("submit", (e) => { e.preventDefault(); const t = $("taskInput").value.trim(); if (!t) return; S.tasks.unshift({ id: uid(), t, area: $("taskArea").value, done: false, pri: false }); $("taskInput").value = ""; commit(); });
+  $("taskFilter").addEventListener("click", (e) => { const f = e.target.closest("button")?.dataset.f; if (f) { taskFilter = f; renderToday(); } });
+  $("clearDone").addEventListener("click", () => { const n = S.tasks.filter((t) => t.done).length; S.tasks = S.tasks.filter((t) => !t.done); commit(); if (n) toast(`Cleared ${n} completed`); });
+  $("habitForm").addEventListener("submit", (e) => { e.preventDefault(); const h = $("habitInput").value.trim(); if (h && !S.habits.includes(h)) S.habits.push(h); $("habitInput").value = ""; commit(); });
+  $("contentForm").addEventListener("submit", (e) => { e.preventDefault(); const t = $("contentInput").value.trim(); if (!t) return; S.content.push({ id: uid(), title: t, plat: $("contentPlat").value, stage: 0, due: $("contentDue").value }); $("contentInput").value = ""; $("contentDue").value = ""; commit(); });
+  $("ideaForm").addEventListener("submit", (e) => { e.preventDefault(); const t = $("ideaInput").value.trim(); if (!t) return; S.ideas.unshift({ id: uid(), t }); $("ideaInput").value = ""; commit(); });
+  $("streamDay").replaceChildren(...[1, 2, 3, 4, 5, 6, 0].map((d) => el("option", { value: d }, DAYS[d])));
+  $("streamDay").value = String(new Date().getDay());
+  $("streamForm").addEventListener("submit", (e) => { e.preventDefault(); const t = $("streamTitle").value.trim(); if (!t) return; S.streams.push({ id: uid(), day: +$("streamDay").value, time: $("streamTime").value || "19:00", title: t }); $("streamTitle").value = ""; commit(); });
+  $("launchReset").addEventListener("click", () => { S.launchDone = []; commit(); });
+  $("upMinus").addEventListener("click", () => { S.goals.uploads = Math.max(1, S.goals.uploads - 1); commit(); });
+  $("upPlus").addEventListener("click", () => { S.goals.uploads = Math.min(21, S.goals.uploads + 1); commit(); });
+  $("wkBtn").addEventListener("click", () => { const d = today(); d.workout = !d.workout; if (d.workout) toast("Training logged"); commit(); });
+  $("sleepMinus").addEventListener("click", () => { const d = today(); d.sleep = d.sleep ? Math.max(0, d.sleep - 0.5) || null : null; commit(); });
+  $("sleepPlus").addEventListener("click", () => { const d = today(); d.sleep = d.sleep ? Math.min(14, d.sleep + 0.5) : 7; commit(); });
+  $("weightIn").addEventListener("change", (e) => { const v = parseFloat(e.target.value); today().weight = isNaN(v) ? null : v; commit(); });
+  $("breakMinus").addEventListener("click", () => { const d = today(); d.breaks = Math.max(0, d.breaks - 1); commit(); });
+  $("breakPlus").addEventListener("click", () => { today().breaks++; commit(); });
+  $("wgMinus").addEventListener("click", () => { S.goals.water = Math.max(1, S.goals.water - 1); commit(); });
+  $("wgPlus").addEventListener("click", () => { S.goals.water = Math.min(16, S.goals.water + 1); commit(); });
+  $("sgMinus").addEventListener("click", () => { S.goals.sleep = Math.max(5, S.goals.sleep - 0.5); commit(); });
+  $("sgPlus").addEventListener("click", () => { S.goals.sleep = Math.min(11, S.goals.sleep + 0.5); commit(); });
+
+  // tabs
+  const TABS = ["today", "studio", "body", "coach"];
+  function showTab(name) {
+    if (!TABS.includes(name)) name = "today";
+    TABS.forEach((t) => { $("tab-" + t).hidden = t !== name; });
+    document.querySelectorAll(".tabbar button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+    try { localStorage.setItem("cadence-tab", name); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+  document.querySelector(".tabbar").addEventListener("click", (e) => { const t = e.target.closest("button")?.dataset.tab; if (t) showTab(t); });
+  let startTab = location.hash.slice(1);
+  if (!TABS.includes(startTab)) { try { startTab = localStorage.getItem("cadence-tab") || "today"; } catch (e) { startTab = "today"; } }
+
+  // focus timer
+  let mode = 25, left = 25 * 60, tick = null, endAt = 0;
+  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  function drawClock() {
+    $("clock").textContent = fmt(left);
+    $("startBtn").replaceChildren(icon(tick ? "pause" : "play", 22, 2.4));
+    $("startBtn").setAttribute("aria-label", tick ? "Pause timer" : "Start timer");
+  }
+  function stopTimer() { clearInterval(tick); tick = null; drawClock(); }
+  $("startBtn").addEventListener("click", () => {
+    if (tick) { stopTimer(); return; }
+    endAt = Date.now() + left * 1000;
+    tick = setInterval(() => {
+      left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+      if (left === 0) {
+        stopTimer();
+        if (mode !== 5) { today().focus++; toast("Block complete. Stand up and stretch."); commit(); } else toast("Break over");
+        left = mode * 60;
+      }
+      drawClock();
+    }, 250);
+    drawClock();
+  });
+  $("resetBtn").addEventListener("click", () => { stopTimer(); left = mode * 60; drawClock(); });
+  $("modeSeg").addEventListener("click", (e) => {
+    const m = +e.target.closest("button")?.dataset.m; if (!m) return;
+    mode = m; stopTimer(); left = m * 60; drawClock();
+    document.querySelectorAll("#modeSeg button").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.m === m)));
+  });
+
+  // ---------- coach ----------
+  let advisor = "manager", convo = [], sample = null, busy = false;
+  function renderCoach() {
+    $("advisors").replaceChildren(...Object.entries(ADVISORS).map(([k, a]) => el("button", { class: "advisor", type: "button", "aria-pressed": String(k === advisor), onclick: () => { if (advisor !== k) { advisor = k; convo = []; renderCoach(); } } },
+      el("span", { class: "mono", style: `--c:${a.c}` }, a.mono),
+      el("span", { class: "t" }, el("b", {}, a.name), el("span", { class: "sub" }, a.sub)))));
+    $("quick").replaceChildren(...ADVISORS[advisor].quick.map((q) => el("button", { class: "pill", type: "button", onclick: () => ask(q) }, q)));
+    $("quick").hidden = convo.length > 0;
+    $("chat").hidden = convo.length === 0;
+    $("chat").replaceChildren(...convo.map((m) => el("div", { class: "msg " + (m.role === "user" ? "me" : "ai") }, m.content)));
+    $("chat").scrollTop = $("chat").scrollHeight;
+  }
+  function context() {
+    const d = today(), last7 = [];
+    for (let i = 6; i >= 0; i--) { const k = dkey(daysAgo(i)), x = S.days[k]; if (x) last7.push({ date: k, dayScore: dayScore(k), water: x.water, sleep: x.sleep, energy: x.energy, weight: x.weight, workout: x.workout, focusBlocks: x.focus }); }
+    const r = scores(dkey());
+    return JSON.stringify({
+      now: new Date().toString(),
+      scoresToday: { readiness: r.readiness.score, execution: r.execution.score, activity: r.activity.score },
+      openTasks: S.tasks.filter((t) => !t.done).map((t) => ({ task: t.t, area: AREA[t.area], priority: !!t.pri })),
+      production: S.content.filter((c) => c.stage < 5).map((c) => ({ title: c.title, platform: c.plat, stage: STAGES[c.stage], due: c.due || null })),
+      shipped: S.content.filter((c) => c.stage === 5).map((c) => ({ title: c.title, platform: c.plat, posted: c.postedAt || null })),
+      uploadTargetPerWeek: S.goals.uploads,
+      ideas: S.ideas.map((i) => i.t),
+      streamSchedule: S.streams.map((s) => `${DAYS[s.day]} ${s.time} ${s.title}`),
+      todaysTraining: WORKOUTS[new Date().getDay()],
+      today: { water: d.water, waterTarget: S.goals.water, sleep: d.sleep, sleepTarget: S.goals.sleep, energy: d.energy, trainingDone: d.workout, habitsDone: d.habits, habits: S.habits },
+      last7Days: last7,
+    });
+  }
+  async function ask(q) {
+    q = (q || "").trim(); if (!q || busy) return;
+    if (!sample) { $("coachNote").hidden = false; return; }
+    busy = true; $("askBtn").disabled = true;
+    convo.push({ role: "user", content: q }, { role: "assistant", content: "Thinking…" });
+    renderCoach();
+    const bubble = $("chat").lastElementChild;
+    const msgs = convo.slice(0, -1).map((m, i) => (i === 0 ? { role: "user", content: `${ADVISORS[advisor].sys}\nUse the user's live data below when it helps. Write plain text without markdown headings or bold.\n\nDATA: ${context()}\n\nQUESTION: ${m.content}` } : m));
+    try {
+      const r = await sample(msgs, { cache: false, onText: ({ text }) => { bubble.textContent = text; $("chat").scrollTop = $("chat").scrollHeight; } });
+      convo[convo.length - 1].content = r.text;
+    } catch (e) {
+      convo[convo.length - 1].content = e && e.code === "rate_limited" ? "Too many requests at once. Try again in a minute." : e && e.code === "not_granted" ? "Advisors are turned off for this page. Turn them on from the page's Permissions menu." : "No answer came back. Try again in a moment.";
+    }
+    busy = false; $("askBtn").disabled = false; renderCoach();
+  }
+  $("askForm").addEventListener("submit", (e) => { e.preventDefault(); const q = $("askInput").value; $("askInput").value = ""; $("askInput").style.height = ""; ask(q); });
+  $("askInput").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("askForm").requestSubmit(); } });
+  $("askInput").addEventListener("input", (e) => { e.target.style.height = "auto"; e.target.style.height = Math.min(140, e.target.scrollHeight) + "px"; });
+
+  // ---------- boot ----------
+  render(); renderCoach(); drawClock(); showTab(startTab);
+  let dayNow = dkey();
+  setInterval(() => { if (dkey() !== dayNow) { dayNow = dkey(); render(); } }, 60000);
+
+  if (window.claude?.use) {
+    claude.use("sample").then((s) => { sample = s; if (!s) $("coachNote").hidden = false; });
+    claude.use("db").then(async (db) => {
+      if (!db) return;
+      const ref = db.doc("hq/state");
+      try {
+        const snap = await ref.get();
+        if (snap.exists) { S = normalize(snap.data()); lastSaved = JSON.stringify(S); try { localStorage.setItem("bbhq", lastSaved); } catch (e) {} render(); }
+        docRef = ref; setSync("Synced", true);
+        if (!snap.exists) save();
+      } catch (e) { setSync("This device", false); }
+    });
+  } else { $("coachNote").hidden = false; }
+})();
+</script>
