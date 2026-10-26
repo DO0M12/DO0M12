@@ -30,32 +30,52 @@ How the scores use it:
 
 Apple Health stores HRV as SDNN and Health Connect stores RMSSD, so the two platforms give different absolute numbers. That's fine because scoring compares you to your own average.
 
-## Get it on your phone
+## Get it on your iPhone
 
-The health libraries need native code, so Cadence can't run in Expo Go. You need a build made with EAS, Expo's cloud build service. You don't need a Mac.
+The health libraries need native code, so Cadence can't run in Expo Go. It's built in the cloud by EAS (Expo's build service) and installed through TestFlight. You need a computer once, Mac or Windows, for the first build; it never needs Xcode.
 
-1. Create a free account at expo.dev.
-2. In this folder:
+**One-time setup**
+
+1. **Join the Apple Developer Program** ($99/year). You can enroll from the Apple Developer app on the iPhone. Approval can take up to two days, so start here.
+2. **Create a free Expo account** at expo.dev.
+3. **Install the TestFlight app** on the iPhone from the App Store.
+4. **On the computer**, install Node.js (the LTS version from nodejs.org), then get this repository onto it (GitHub's **Code → Download ZIP**, or `git clone`).
+5. Open a terminal in the `mobile` folder and run:
    ```bash
    npm install
-   npx eas-cli@latest login
-   npx eas-cli@latest init          # links the project to your Expo account
+   npx testflight
    ```
-3. **iPhone** (needs an Apple Developer account, $99/year):
-   ```bash
-   npx eas-cli@latest device:create                          # register your iPhone
-   npx eas-cli@latest build --profile development --platform ios
-   ```
-   Install the build from the link EAS gives you, then run `npx expo start` and open the project from the Cadence app on your phone.
+   It walks you through everything: it links the project to your Expo account, confirms the bundle ID, signs in to your Apple account (with two-factor), creates the signing certificates, builds the app in the cloud (about 15–20 minutes), and uploads it to TestFlight.
+6. When Apple finishes processing the build (usually 10–30 minutes), it appears in the TestFlight app. Tap **Install**.
 
-   To install it like a normal app instead, use TestFlight: `npx testflight` builds, signs and uploads it in one command.
-4. **Android** (no paid account needed for your own phone):
-   ```bash
-   npx eas-cli@latest build --profile preview --platform android
-   ```
-   Open the link on your phone and install the APK.
+If `com.buckbros.cadence` is already taken, pick another bundle ID when `npx testflight` asks (for example `com.yourname.cadence`).
 
-If `com.buckbros.cadence` is taken when you register the app, change `ios.bundleIdentifier` and `android.package` in `app.json`.
+**Updates after that (no computer)**
+
+`.eas/workflows/testflight.yml` builds and ships a new TestFlight version every time a change to `mobile/` lands on `main`. To turn it on:
+
+1. On expo.dev, open the Cadence project → **Settings → GitHub**, install the Expo GitHub app and link this repository.
+2. Set **Base directory** to `mobile`.
+
+From then on, merging a change is all it takes; TestFlight on the phone shows the update. You can also start a run from the project's **Workflows** page.
+
+**Connect the wearables (on the iPhone)**
+
+1. In the Whoop app, turn on the Apple Health integration (in the app's integrations settings) and allow sleep, HRV, resting heart rate and workouts.
+2. In Garmin Connect, add Apple Health under **Connected Apps** and allow the same data.
+3. Open Cadence → **Body → Connect Apple Health** and turn on every category it asks for.
+
+## Android
+
+No paid account is needed to install on your own Android phone. In the `mobile` folder:
+
+```bash
+npm install
+npx eas-cli@latest login
+npx eas-cli@latest build --profile preview --platform android
+```
+
+Open the link it gives you on the phone and install the APK. If `com.buckbros.cadence` is taken, change `android.package` in `app.json`.
 
 ## Advisors
 
